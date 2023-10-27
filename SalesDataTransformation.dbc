@@ -40,5 +40,13 @@ spark.conf.set("fs.azure.account.auth.oauth2.datalake_account.dfs.core.windows.n
 # Load data from the raw folder
 raw_data = spark.read.format("parquet").load(raw_data_path)
 
+# Perform data transformation pipeline
+cleansed_data = data_cleansing(raw_data)
+enriched_data = data_enrichment(cleansed_data)
+aggregated_data = aggregation(enriched_data)
+
+# Write the transformed data to the processed folder in Parquet format
+aggregated_data.write.format("parquet").mode("overwrite").save(processed_data_path)
+
 # Stop the Spark session
 spark.stop()
