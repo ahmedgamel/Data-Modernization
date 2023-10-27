@@ -6,4 +6,5 @@ The data is collected from different data sources and stored in Azure SQL DB. Az
 
 Azure Databricks will be used to clean and enrich the data.
 
+
 ![ETL](https://github.com/ahmedgamel/Data-Modernization/assets/79502914/7c4d6281-7d05-4fbf-82ca-21087bc64d59)
