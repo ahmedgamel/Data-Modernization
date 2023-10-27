@@ -5,38 +5,40 @@ from pyspark.sql.types import *
 from azure.identity import DefaultAzureCredential
 
 # Set Azure Data Lake Storage Gen2 paths
-raw_data_path = "abfss://your_datalake_account@your_datalake_name.dfs.core.windows.net/raw/"
-processed_data_path = "abfss://your_datalake_account@your_datalake_name.dfs.core.windows.net/processed/"
+raw_data_path = "abfss://datalake_account@datalake_name.dfs.core.windows.net/raw/"
+processed_data_path = "abfss://datalake_account@datalake_name.dfs.core.windows.net/processed/"
 
 # Create a Spark session
 spark = SparkSession.builder.appName("DataTransformation").getOrCreate()
 
 # Define functions for data transformation
 def data_cleansing(data_frame):
-    # Assumption: Remove rows with missing or unrealistic sales values
+    # Remove rows with missing or unrealistic sales values
     data_frame = data_frame.dropna(subset=["sales"]).filter(col("sales") >= 0)
     return data_frame
 
 def data_enrichment(data_frame):
-    # Assumption: Enrich sales data with product information
+    # Enrich sales data with product information
     # Load product information from an external CSV file
-    external_data = spark.read.format("csv").load("abfss://your_datalake_account@your_datalake_name.dfs.core.windows.net/external_data/")
+    external_data = spark.read.format("csv").load("abfss://datalake_account@datalake_name.dfs.core.windows.net/external_data/")
     # Enrich the data by joining it with the product information
     data_frame = data_frame.join(external_data, "product_id", "left")
     return data_frame
 
 def aggregation(data_frame):
-    # Assumption: Calculate total sales by date
+    # Calculate total sales by date
     data_frame = data_frame.groupBy("date").agg(sum("sales").alias("total_sales"))
     return data_frame
 
-# Use Azure Key Vault for authentication (assumption: you have set up service principal credentials)
+# Use Azure Key Vault for authentication (service principal credentials already setup)
 credential = DefaultAzureCredential()
-spark.conf.set("fs.azure.account.auth.type.your_datalake_account.dfs.core.windows.net", "OAuth")
-spark.conf.set("fs.azure.account.auth.oauth2.your_datalake_account.dfs.core.windows.net.client.id", credential.get_token().token)
-spark.conf.set("fs.azure.account.auth.oauth2.your_datalake_account.dfs.core.windows.net.client.secret", "your_client_secret")
-spark.conf.set("fs.azure.account.auth.oauth2.your_datalake_account.dfs.core.windows.net.client.endpoint", "https://login.microsoftonline.com/your_directory_id/oauth2/token")
+spark.conf.set("fs.azure.account.auth.type.datalake_account.dfs.core.windows.net", "OAuth")
+spark.conf.set("fs.azure.account.auth.oauth2.datalake_account.dfs.core.windows.net.client.id", credential.get_token().token)
+spark.conf.set("fs.azure.account.auth.oauth2.datalake_account.dfs.core.windows.net.client.secret", "client_secret")
+spark.conf.set("fs.azure.account.auth.oauth2.datalake_account.dfs.core.windows.net.client.endpoint", "https://login.microsoftonline.com/directory_id/oauth2/token")
 
 # Load data from the raw folder
 raw_data = spark.read.format("parquet").load(raw_data_path)
 
+# Stop the Spark session
+spark.stop()
